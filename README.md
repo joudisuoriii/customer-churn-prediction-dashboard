@@ -22,6 +22,16 @@ Die Zielvariable verteilt sich wie folgt:
 - 7.963 Kunden ohne Abwanderung (79,63 %)
 - 2.037 abgewanderte Kunden (20,37 %)
 
+### Datenquelle
+
+Der für die Untersuchung verwendete Datensatz `Churn_Modelling.csv` enthält 10.000 Bankkundendatensätze. Der Datensatz wird nicht direkt in diesem Repository bereitgestellt.
+
+Für die lokale Ausführung muss die Datei unter folgendem Pfad abgelegt werden:
+
+```text
+data/Churn_Modelling.csv
+```
+
 ## Methodisches Vorgehen
 
 Der technische Workflow umfasst folgende Schritte:
@@ -67,6 +77,24 @@ Das interaktive Dashboard dient als Entscheidungsunterstützung und stellt unter
 
 Das System dient ausschließlich der Entscheidungsunterstützung und trifft keine automatischen Entscheidungen über Kundenbindungsmaßnahmen.
 
+## Installation und lokale Ausführung
+
+Die für das Projekt benötigten Python-Bibliotheken sind in der Datei `requirements.txt` aufgeführt und können mit folgendem Befehl installiert werden:
+
+```bash
+pip install -r requirements.txt
+```
+
+Die einzelnen Analyseschritte können anschließend über die entsprechenden Python-Skripte ausgeführt werden.
+
+Der Streamlit-Prototyp befindet sich unter:
+
+```text
+prototype/app.py
+```
+
+Für die Ausführung des Dashboards werden zusätzlich die zuvor erzeugten Modell- und Vorverarbeitungsdateien benötigt. Diese werden lokal generiert und sind nicht Bestandteil des Repositories.
+
 ## Projektstruktur
 
 ```text
@@ -76,6 +104,7 @@ Das System dient ausschließlich der Entscheidungsunterstützung und trifft kein
 ├── ml_comparison.py
 ├── save_final_model.py
 ├── shap_analysis.py
+├── requirements.txt
 ├── data/
 ├── eda_results/
 ├── ml_results/
