@@ -59,27 +59,46 @@ Der technische Workflow umfasst folgende Schritte:
 
 ## Modellvergleich
 
-In der Untersuchung werden drei Klassifikationsmodelle miteinander verglichen:
+In der Untersuchung werden drei Klassifikationsmodelle auf derselben Datenbasis miteinander verglichen:
 
 - Logistische Regression
 - Random Forest
 - XGBoost
 
-Die Modellauswahl erfolgt auf Grundlage der Ergebnisse des empirischen Vergleichs auf derselben Datenbasis.
+Die Modelle werden anhand von Accuracy, Precision, Recall, F1-Score und ROC-AUC evaluiert.
+
+Die Ergebnisse des Modellvergleichs sind:
+
+| Modell | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
+|---|---:|---:|---:|---:|---:|
+| Logistische Regression | 0.7257 | 0.4013 | 0.7054 | 0.5116 | 0.7912 |
+| Random Forest | 0.8510 | 0.6507 | 0.5794 | 0.6130 | 0.8628 |
+| XGBoost | 0.8610 | 0.6830 | 0.5925 | 0.6345 | 0.8807 |
+
+Auf Grundlage des Modellvergleichs wurde XGBoost für den finalen Prototyp ausgewählt. Das Modell erzielt im Vergleich die höchste Accuracy, den höchsten F1-Score sowie den höchsten ROC-AUC-Wert.
 
 ## Explainable Artificial Intelligence
 
 Zur Interpretation der Modellvorhersagen wird SHAP (SHapley Additive exPlanations) eingesetzt.
 
-SHAP ermöglicht es, den Beitrag einzelner Merkmale zu einer konkreten Vorhersage darzustellen. Dadurch kann neben dem prognostizierten Abwanderungsrisiko nachvollzogen werden, welche Merkmale die jeweilige Vorhersage beeinflusst haben.
+SHAP ermöglicht es, den Beitrag einzelner Merkmale zu einer konkreten Modellvorhersage darzustellen. Dadurch kann neben dem prognostizierten Abwanderungsrisiko nachvollzogen werden, welche Merkmale die jeweilige Vorhersage des Modells beeinflusst haben.
+
+Die SHAP-Analyse wird sowohl zur Untersuchung der globalen Merkmalsrelevanz als auch zur lokalen Erklärung einzelner Kundenprognosen eingesetzt.
 
 ## Streamlit-Prototyp
 
 Das interaktive Dashboard dient als Entscheidungsunterstützung und stellt unter anderem folgende Informationen dar:
 
-- prognostiziertes Abwanderungsrisiko
+- prognostizierte Abwanderungswahrscheinlichkeit
 - Risikokategorie
+- wichtigste Einflussfaktoren der individuellen Vorhersage
 - lokale SHAP-Erklärung der jeweiligen Vorhersage
+
+Die Risikokategorien werden im Prototyp anhand der prognostizierten Abwanderungswahrscheinlichkeit wie folgt dargestellt:
+
+- geringes Risiko: unter 30 %
+- mittleres Risiko: 30 % bis unter 60 %
+- hohes Risiko: ab 60 %
 
 Das System dient ausschließlich der Entscheidungsunterstützung und trifft keine automatischen Entscheidungen über Kundenbindungsmaßnahmen.
 
@@ -91,7 +110,15 @@ Die für das Projekt benötigten Python-Bibliotheken sind in der Datei `requirem
 pip install -r requirements.txt
 ```
 
-Die einzelnen Analyseschritte können anschließend über die entsprechenden Python-Skripte ausgeführt werden.
+Die einzelnen Analyseschritte können anschließend über die entsprechenden Python-Skripte ausgeführt werden:
+
+```bash
+python churn_analysis.py
+python ml_comparison.py
+python save_final_model.py
+python evaluate_model.py
+python shap_analysis.py
+```
 
 Der Streamlit-Prototyp befindet sich unter:
 
@@ -99,7 +126,13 @@ Der Streamlit-Prototyp befindet sich unter:
 prototype/app.py
 ```
 
-Für die Ausführung des Dashboards werden zusätzlich die zuvor erzeugten Modell- und Vorverarbeitungsdateien benötigt. Diese werden lokal generiert und sind nicht Bestandteil des Repositories.
+Nach dem Training und Export des finalen Modells kann das Dashboard mit folgendem Befehl gestartet werden:
+
+```bash
+streamlit run prototype/app.py
+```
+
+Für die Ausführung des Dashboards werden die zuvor durch `save_final_model.py` erzeugten Modell- und Vorverarbeitungsdateien benötigt. Diese werden lokal im Verzeichnis `prototype/model/` generiert und sind nicht Bestandteil des Repositories.
 
 ## Projektstruktur
 
@@ -111,16 +144,21 @@ Für die Ausführung des Dashboards werden zusätzlich die zuvor erzeugten Model
 ├── save_final_model.py
 ├── shap_analysis.py
 ├── requirements.txt
-├── data/
-├── eda_results/
-├── ml_results/
-├── shap_results/
+├── data/                       # lokal, enthält Churn_Modelling.csv
+├── eda_results/                # Ergebnisse der explorativen Datenanalyse
+├── ml_results/                 # Ergebnisse des Modellvergleichs
+├── shap_results/               # Ergebnisse der SHAP-Analyse
 └── prototype/
-    └── app.py
+    ├── app.py
+    ├── confusion_matrix.png
+    ├── roc_curve.png
+    └── model/                  # lokal erzeugte Modell-Dateien
 ```
 
 ## Status
 
 Dieses Repository enthält den aktuellen technischen Prototyp des Projekts.
+
+Die Datenanalyse, der Vergleich der Klassifikationsmodelle, das Training des ausgewählten XGBoost-Modells, die Modellevaluation, die SHAP-Analyse sowie die Integration in das Streamlit-Dashboard sind im aktuellen Prototyp umgesetzt.
 
 Die Implementierung befindet sich im Rahmen der Bachelorarbeit in Weiterentwicklung und kann auf Grundlage methodischer Anforderungen sowie des Feedbacks der Betreuungsperson weiter angepasst werden.
