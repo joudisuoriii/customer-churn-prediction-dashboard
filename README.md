@@ -7,6 +7,7 @@ Dieses Projekt stellt den aktuellen Prototyp eines Entscheidungsunterstützungss
 Ziel ist die Entwicklung eines interpretierbaren Decision Support Systems (DSS), das Machine-Learning-basierte Churn-Prognosen mit lokalen SHAP-Erklärungen in einem interaktiven Streamlit-Dashboard verbindet.
 
 Der Prototyp kombiniert:
+
 - Logistische Regression
 - Random Forest
 - XGBoost
@@ -19,12 +20,17 @@ Der Prototyp kombiniert:
 Für die Untersuchung wird ein Bankkunden-Datensatz mit insgesamt 10.000 Kunden verwendet.
 
 Die Zielvariable verteilt sich wie folgt:
+
 - 7.963 Kunden ohne Abwanderung (79,63 %)
 - 2.037 abgewanderte Kunden (20,37 %)
 
 ### Datenquelle
 
-Der für die Untersuchung verwendete Datensatz `Churn_Modelling.csv` enthält 10.000 Bankkundendatensätze. Der Datensatz wird nicht direkt in diesem Repository bereitgestellt.
+Für die Untersuchung wird der öffentlich verfügbare Kaggle-Datensatz „Customer Churn from a Bank“ verwendet:
+
+https://www.kaggle.com/datasets/murilozangari/customer-churn-from-a-bank
+
+Die verwendete Datei `Churn_Modelling.csv` enthält 10.000 Bankkundendatensätze. Die CSV-Datei wird nicht direkt in diesem Repository bereitgestellt.
 
 Für die lokale Ausführung muss die Datei unter folgendem Pfad abgelegt werden:
 
