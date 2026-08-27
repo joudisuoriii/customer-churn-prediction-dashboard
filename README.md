@@ -82,7 +82,9 @@ Das System dient ausschließlich der Entscheidungsunterstützung und trifft kein
 ├── shap_results/
 └── prototype/
     └── app.py
-Status
+```
+
+## Status
 
 Dieses Repository enthält den aktuellen technischen Prototyp des Projekts.
 
