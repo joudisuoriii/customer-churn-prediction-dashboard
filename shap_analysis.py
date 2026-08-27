@@ -1,116 +1,174 @@
-import os
+# -*- coding: utf-8 -*-
+# Bachelorarbeit - SHAP-Analyse des finalen XGBoost-Modells
+# Globale Feature-Wichtigkeit und lokale Erklärung einer Testbeobachtung
+
 import pickle
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import shap
+
 from sklearn.model_selection import train_test_split
 
-# Pfadkonfiguration
-BASE_DIR = Path(".")
-DATA_PATH = BASE_DIR / "data" / "Churn_Modelling.csv"
-MODEL_DIR = BASE_DIR / "prototype" / "model"
-OUT_DIR = Path("shap_results")
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+# Pfade
+basis_ordner = Path(".")
+daten_pfad = basis_ordner / "data" / "Churn_Modelling.csv"
+modell_ordner = basis_ordner / "prototype" / "model"
+ergebnis_ordner = Path("shap_results")
+ergebnis_ordner.mkdir(parents=True, exist_ok=True)
 
-def load_artifacts():
-    """Lädt das trainierte Modell, den Preprocessing-Transformer und die Feature-Namen."""
-    with open(MODEL_DIR / "final_xgboost.pkl", "rb") as f:
-        model = pickle.load(f)
-    with open(MODEL_DIR / "final_transformer.pkl", "rb") as f:
-        transformer = pickle.load(f)
-    with open(MODEL_DIR / "final_feature_names.pkl", "rb") as f:
-        features = pickle.load(f)
-    return model, transformer, features
+
+def modell_dateien_laden():
+    """Lädt Modell, Transformer und die Namen der transformierten Merkmale."""
+    with open(modell_ordner / "final_xgboost.pkl", "rb") as datei:
+        modell = pickle.load(datei)
+
+    with open(modell_ordner / "final_transformer.pkl", "rb") as datei:
+        transformer = pickle.load(datei)
+
+    with open(modell_ordner / "final_feature_names.pkl", "rb") as datei:
+        merkmale = pickle.load(datei)
+
+    return modell, transformer, merkmale
+
 
 def main():
-    # 1. Daten laden und Testsplit replizieren
     print("Datensatz wird geladen und Testdaten werden vorbereitet...")
-    df = pd.read_csv(DATA_PATH, sep=";")
-    
-    # Nicht relevante Spalten und Zielvariable trennen
-    drop_cols = ["RowNumber", "CustomerId", "Surname", "Exited"]
-    X = df.drop(columns=drop_cols)
-    y = df["Exited"]
 
-    # Stratifizierter Split (äquivalent zum Trainings-Setup)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.30, random_state=42, stratify=y
+    daten = pd.read_csv(daten_pfad, sep=";")
+    if daten.shape[1] == 1:
+        daten = pd.read_csv(daten_pfad, sep=",")
+
+    id_und_ziel = ["RowNumber", "CustomerId", "Surname", "Exited"]
+    X_daten = daten.drop(columns=id_und_ziel)
+    y_ziel = daten["Exited"]
+
+    # Gleicher Testsplit wie beim Training
+    _, X_test, _, _ = train_test_split(
+        X_daten,
+        y_ziel,
+        test_size=0.30,
+        random_state=42,
+        stratify=y_ziel
     )
 
-    # 2. Modellkomponenten laden & Testdaten transformieren
-    model, transformer, feature_names = load_artifacts()
-    
-    X_test_trans = pd.DataFrame(
+    modell, transformer, merkmalsnamen = modell_dateien_laden()
+
+    X_test_transformiert = pd.DataFrame(
         transformer.transform(X_test),
-        columns=feature_names,
+        columns=merkmalsnamen,
         index=X_test.index
     )
 
-    # Vorhersagen und Wahrscheinlichkeiten berechnen
-    probs = model.predict_proba(X_test_trans)[:, 1]
-    print(f"Testbeobachtungen: {len(X_test)} | Maximale Churn-Wahrscheinlichkeit: {probs.max():.4f}")
+    churn_wahrscheinlichkeiten = modell.predict_proba(
+        X_test_transformiert
+    )[:, 1]
 
-    # 3. Globale SHAP-Analyse
-    print("Berechne SHAP-Werte mittels TreeExplainer...")
-    explainer = shap.TreeExplainer(model)
-    shap_vals = explainer.shap_values(X_test_trans)
-    
-    # Sicherstellen des korrekten Formats bei binärer Klassifikation
-    if isinstance(shap_vals, list):
-        shap_vals = shap_vals[1]
-    shap_vals = np.asarray(shap_vals)
+    print(
+        f"Testbeobachtungen: {len(X_test)} | "
+        f"Maximale Churn-Wahrscheinlichkeit: "
+        f"{churn_wahrscheinlichkeiten.max():.4f}"
+    )
 
-    # Summary Plot (Bienenwarm-Diagramm)
+    print("Berechne SHAP-Werte mit TreeExplainer...")
+    explainer = shap.TreeExplainer(modell)
+    shap_werte = explainer.shap_values(X_test_transformiert)
+
+    if isinstance(shap_werte, list):
+        shap_werte = shap_werte[1]
+
+    shap_werte = np.asarray(shap_werte)
+
+    # SHAP Summary Plot
     plt.figure(figsize=(10, 6))
-    shap.summary_plot(shap_vals, X_test_trans, show=False)
+    shap.summary_plot(
+        shap_werte,
+        X_test_transformiert,
+        show=False
+    )
     plt.title("SHAP Summary Plot – Kundenabwanderung")
-    plt.savefig(OUT_DIR / "shap_summary.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        ergebnis_ordner / "shap_summary.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
     plt.close()
 
-    # Globale Feature-Wichtigkeit (Balkendiagramm)
+    # Globale Feature-Wichtigkeit
     plt.figure(figsize=(10, 6))
-    shap.summary_plot(shap_vals, X_test_trans, plot_type="bar", show=False)
+    shap.summary_plot(
+        shap_werte,
+        X_test_transformiert,
+        plot_type="bar",
+        show=False
+    )
     plt.title("Globale Feature-Wichtigkeit (SHAP)")
-    plt.savefig(OUT_DIR / "shap_feature_importance.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        ergebnis_ordner / "shap_feature_importance.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
     plt.close()
 
-    # 4. Lokale Erklärung (Kunde mit höchstem Churn-Risiko)
-    top_idx = int(np.argmax(probs))
-    expected_val = explainer.expected_value
-    if isinstance(expected_val, (list, np.ndarray)):
-        expected_val = np.asarray(expected_val).flatten()[0]
+    # Lokale Erklärung für den Testfall mit dem höchsten Churn-Risiko
+    top_index = int(np.argmax(churn_wahrscheinlichkeiten))
 
-    explanation = shap.Explanation(
-        values=shap_vals[top_idx],
-        base_values=expected_val,
-        data=X_test_trans.iloc[top_idx].values,
-        feature_names=feature_names
+    basiswert = explainer.expected_value
+    if isinstance(basiswert, (list, np.ndarray)):
+        basiswert = np.asarray(basiswert).flatten()[0]
+
+    erklaerung = shap.Explanation(
+        values=shap_werte[top_index],
+        base_values=basiswert,
+        data=X_test_transformiert.iloc[top_index].values,
+        feature_names=merkmalsnamen
     )
 
-    # Waterfall Plot für Einzelfallanalyse
     plt.figure(figsize=(10, 6))
-    shap.plots.waterfall(explanation, max_display=10, show=False)
-    plt.title(f"SHAP Waterfall Plot (Index: {top_idx}, Churn-Wsk: {probs[top_idx]:.2%})")
-    plt.savefig(OUT_DIR / "shap_waterfall_kunde.png", dpi=300, bbox_inches="tight")
+    shap.plots.waterfall(
+        erklaerung,
+        max_display=10,
+        show=False
+    )
+    plt.title(
+        "SHAP Waterfall Plot "
+        f"(Churn-Wahrscheinlichkeit: "
+        f"{churn_wahrscheinlichkeiten[top_index]:.2%})"
+    )
+    plt.savefig(
+        ergebnis_ordner / "shap_waterfall_kunde.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
     plt.close()
 
-    # 5. Export der SHAP-Werte und Feature-Rankings
-    pd.DataFrame(shap_vals, columns=feature_names).to_csv(
-        OUT_DIR / "shap_werte_testdatensatz.csv", index=False
+    # SHAP-Werte des Testdatensatzes speichern
+    pd.DataFrame(
+        shap_werte,
+        columns=merkmalsnamen
+    ).to_csv(
+        ergebnis_ordner / "shap_werte_testdatensatz.csv",
+        index=False
     )
 
-    # Top-Features nach mittlerem absolutem SHAP-Wert sortieren
+    # Ranking nach mittlerem absolutem SHAP-Wert
     importance_df = pd.DataFrame({
-        "Feature": feature_names,
-        "Mean_Abs_SHAP": np.abs(shap_vals).mean(axis=0)
-    }).sort_values(by="Mean_Abs_SHAP", ascending=False)
+        "Feature": merkmalsnamen,
+        "Mean_Abs_SHAP": np.abs(shap_werte).mean(axis=0)
+    }).sort_values(
+        by="Mean_Abs_SHAP",
+        ascending=False
+    )
 
     print("\n--- TOP 10 WICHTIGSTE FEATURES (SHAP) ---")
     print(importance_df.head(10).to_string(index=False))
-    print(f"\nAlle Grafiken und Tabellen wurden erfolgreich in '{OUT_DIR}/' gespeichert.")
+    print(
+        f"\nSHAP-Analyse abgeschlossen. Die Ergebnisse wurden in "
+        f"'{ergebnis_ordner}/' gespeichert."
+    )
+
 
 if __name__ == "__main__":
     main()
-

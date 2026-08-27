@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-# Bachelorarbeit - Letzte Evaluation und Speicherung der Grafiken
-# Erstellt die finalen Plots fuer die Dokumentation (Kapitel Ergebnisse)
+# Bachelorarbeit - Evaluation des finalen XGBoost-Modells
+# Berechnung der Kennzahlen sowie Export von Konfusionsmatrix und ROC-Kurve
 
 import pickle
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -19,8 +20,10 @@ from sklearn.metrics import (
     RocCurveDisplay
 )
 
-# Rohdaten fuer den Abgleich einlesen
+# Datensatz laden und denselben Testsplit wiederherstellen
 kunden_rohdaten = pd.read_csv("data/Churn_Modelling.csv", sep=";")
+if kunden_rohdaten.shape[1] == 1:
+    kunden_rohdaten = pd.read_csv("data/Churn_Modelling.csv", sep=",")
 
 ziel_spalte = "Exited"
 id_merkmale = ["RowNumber", "CustomerId", "Surname"]
@@ -28,7 +31,6 @@ id_merkmale = ["RowNumber", "CustomerId", "Surname"]
 X_daten = kunden_rohdaten.drop(columns=id_merkmale + [ziel_spalte])
 y_labels = kunden_rohdaten[ziel_spalte]
 
-# Stratifizierter Split zur exakten Reproduktion der Testdaten
 _, X_test, _, y_test = train_test_split(
     X_daten,
     y_labels,
@@ -37,25 +39,38 @@ _, X_test, _, y_test = train_test_split(
     stratify=y_labels
 )
 
-# Serialisierte pkl-Modelle laden
-with open("prototype/model/final_xgboost.pkl", "rb") as daten_stream:
-    eval_klassifikator = pickle.load(daten_stream)
+# Gespeichertes Modell und Transformer laden
+with open("prototype/model/final_xgboost.pkl", "rb") as datei:
+    eval_klassifikator = pickle.load(datei)
 
-with open("prototype/model/final_transformer.pkl", "rb") as daten_stream:
-    eval_pipeline = pickle.load(daten_stream)
+with open("prototype/model/final_transformer.pkl", "rb") as datei:
+    eval_transformer = pickle.load(datei)
 
-# Testset transformieren
-test_daten_bereit = eval_pipeline.transform(X_test)
+# Testdaten transformieren und Vorhersagen berechnen
+test_daten_bereit = eval_transformer.transform(X_test)
 
-# Inferenz durchfuehren
 vorhersage_labels = eval_klassifikator.predict(test_daten_bereit)
-abwanderung_scores = eval_klassifikator.predict_proba(test_daten_bereit)[:, 1]
+abwanderung_scores = eval_klassifikator.predict_proba(
+    test_daten_bereit
+)[:, 1]
 
-# Kennzahlen berechnen
+# Kennzahlen
 wert_accuracy = accuracy_score(y_test, vorhersage_labels)
-wert_precision = precision_score(y_test, vorhersage_labels, zero_division=0)
-wert_recall = recall_score(y_test, vorhersage_labels, zero_division=0)
-wert_f1 = f1_score(y_test, vorhersage_labels, zero_division=0)
+wert_precision = precision_score(
+    y_test,
+    vorhersage_labels,
+    zero_division=0
+)
+wert_recall = recall_score(
+    y_test,
+    vorhersage_labels,
+    zero_division=0
+)
+wert_f1 = f1_score(
+    y_test,
+    vorhersage_labels,
+    zero_division=0
+)
 wert_auc = roc_auc_score(y_test, abwanderung_scores)
 
 print("\n--- ERGEBNISSE DER MODELL-EVALUATION ---")
@@ -77,7 +92,7 @@ print("\n--- KONFUSIONSMATRIX ---")
 berechnete_matrix = confusion_matrix(y_test, vorhersage_labels)
 print(berechnete_matrix)
 
-# Konfusionsmatrix visualisieren und auf Festplatte exportieren
+# Konfusionsmatrix speichern
 fig_matrix, ax_matrix = plt.subplots(figsize=(7, 6))
 
 ConfusionMatrixDisplay(
@@ -87,7 +102,6 @@ ConfusionMatrixDisplay(
 
 ax_matrix.set_title("Konfusionsmatrix des XGBoost-Modells")
 plt.tight_layout()
-
 plt.savefig(
     "prototype/confusion_matrix.png",
     dpi=300,
@@ -95,7 +109,7 @@ plt.savefig(
 )
 plt.close(fig_matrix)
 
-# ROC-Kurve generieren und abspeichern
+# ROC-Kurve speichern
 fig_roc, ax_roc = plt.subplots(figsize=(7, 6))
 
 RocCurveDisplay.from_predictions(
@@ -104,9 +118,10 @@ RocCurveDisplay.from_predictions(
     ax=ax_roc
 )
 
-ax_roc.set_title(f"ROC-Kurve des XGBoost-Modells (AUC = {wert_auc:.4f})")
+ax_roc.set_title(
+    f"ROC-Kurve des XGBoost-Modells (AUC = {wert_auc:.4f})"
+)
 plt.tight_layout()
-
 plt.savefig(
     "prototype/roc_curve.png",
     dpi=300,
@@ -114,7 +129,7 @@ plt.savefig(
 )
 plt.close(fig_roc)
 
-print("\n--- DATEIEN ERFOLGREICH GESPEICHERT ---")
-print("✓ prototype/confusion_matrix.png")
-print("✓ prototype/roc_curve.png")
-
+print("\nEvaluation abgeschlossen.")
+print("Gespeicherte Dateien:")
+print("- prototype/confusion_matrix.png")
+print("- prototype/roc_curve.png")
