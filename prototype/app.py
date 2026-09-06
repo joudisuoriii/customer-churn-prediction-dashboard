@@ -57,7 +57,7 @@ with spalte1:
     kredit_score = st.number_input(
         "Kredit-Score",
         min_value=300,
-        max_value=900,
+        max_value=850,
         value=650
     )
     alter_kunde = st.number_input(
@@ -153,7 +153,7 @@ if st.button(
 
     # Klasse ermitteln
     vorhergesagte_klasse = int(
-        finales_modell.predict(transformierter_kunde_df)[0]
+    abwanderung_wahrscheinlichkeit >= 0.50
     )
 
     # Risikostufe bestimmen (30 / 60 Thresholds)
