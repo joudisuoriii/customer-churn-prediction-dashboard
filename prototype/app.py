@@ -25,13 +25,18 @@ st.set_page_config(
 def geladene_dateien_einlesen():
     with open(pfad_modell_datei, "rb") as f:
         modell_objekt = pickle.load(f)
+
     with open(pfad_transformer_datei, "rb") as f:
         transformer_objekt = pickle.load(f)
+
     with open(pfad_merkmale_datei, "rb") as f:
         merkmale_namen = pickle.load(f)
+
     return modell_objekt, transformer_objekt, merkmale_namen
 
-finales_modell, daten_transformer, merkmal_namen_liste = geladene_dateien_einlesen()
+finales_modell, daten_transformer, merkmal_namen_liste = (
+    geladene_dateien_einlesen()
+)
 
 # SHAP-Explainer einmalig erstellen und zwischenspeichern
 @st.cache_resource
@@ -40,18 +45,44 @@ def shap_analysator_erstellen():
 
 # Header der Webseite aufbauen
 st.title("🏦 Kundenabwanderung Vorhersage-System")
-st.subheader("KI-gestütztes Dashboard zur Vorhersage und Erklärung von Kunden-Churn")
+
+st.subheader(
+    "KI-gestütztes Dashboard zur Vorhersage "
+    "und Erklärung von Kunden-Churn"
+)
+
 st.write(
     "Dieser funktionale Prototyp verwendet ein trainiertes "
     "XGBoost-Modell zur Schätzung der Abwanderungswahrscheinlichkeit. "
     "SHAP wird eingesetzt, um die individuelle Modellentscheidung "
     "verständlich zu erklären."
 )
+
+st.info(
+    "Dieses System dient ausschließlich der Entscheidungsunterstützung. "
+    "Die endgültige Bewertung und Entscheidung verbleibt beim Nutzer. "
+    "Es werden keine automatisierten Kundenbindungsmaßnahmen ausgelöst."
+)
+
 st.divider()
 
 # Eingabemaske für Benutzereingaben erstellen
 st.header("1. Eingabe der Kundendaten")
+
 spalte1, spalte2, spalte3 = st.columns(3)
+
+# Deutsche Anzeigebezeichnungen
+# Die englischen Originalwerte bleiben für den Transformer erhalten.
+laender_anzeige = {
+    "France": "Frankreich",
+    "Germany": "Deutschland",
+    "Spain": "Spanien"
+}
+
+geschlechter_anzeige = {
+    "Female": "Weiblich",
+    "Male": "Männlich"
+}
 
 with spalte1:
     kredit_score = st.number_input(
@@ -60,12 +91,14 @@ with spalte1:
         max_value=850,
         value=650
     )
+
     alter_kunde = st.number_input(
         "Alter",
         min_value=18,
         max_value=100,
         value=40
     )
+
     laufzeit_jahre = st.number_input(
         "Kundendauer (Jahre)",
         min_value=0,
@@ -80,12 +113,14 @@ with spalte2:
         value=50000.0,
         step=1000.0
     )
+
     anzahl_produkte = st.number_input(
         "Anzahl Produkte",
         min_value=1,
         max_value=4,
         value=2
     )
+
     gehalt_geschaetzt = st.number_input(
         "Geschätztes Jahresgehalt (€)",
         min_value=0.0,
@@ -96,17 +131,22 @@ with spalte2:
 with spalte3:
     herkunftsland = st.selectbox(
         "Land / Region",
-        ["France", "Germany", "Spain"]
+        ["France", "Germany", "Spain"],
+        format_func=lambda wert: laender_anzeige[wert]
     )
+
     geschlecht_kunde = st.selectbox(
         "Geschlecht",
-        ["Female", "Male"]
+        ["Female", "Male"],
+        format_func=lambda wert: geschlechter_anzeige[wert]
     )
+
     besitzt_kreditkarte = st.selectbox(
         "Besitzt eine Kreditkarte?",
         [0, 1],
         format_func=lambda x: "Ja" if x == 1 else "Nein"
     )
+
     ist_aktiv = st.selectbox(
         "Aktives Bankmitglied?",
         [0, 1],
@@ -128,6 +168,7 @@ neuer_kunde_df = pd.DataFrame({
 })
 
 st.divider()
+
 st.header("2. Analyse der Abwanderungsgefahr")
 
 # Berechnung starten bei Button-Klick
@@ -138,7 +179,10 @@ if st.button(
 ):
 
     # Daten transformieren
-    daten_transformiert = daten_transformer.transform(neuer_kunde_df)
+    daten_transformiert = daten_transformer.transform(
+        neuer_kunde_df
+    )
+
     transformierter_kunde_df = pd.DataFrame(
         daten_transformiert,
         columns=merkmal_namen_liste
@@ -149,20 +193,24 @@ if st.button(
         transformierter_kunde_df
     )[0][1]
 
-    prozent_wahrscheinlichkeit = abwanderung_wahrscheinlichkeit * 100
-
-    # Klasse ermitteln
-    vorhergesagte_klasse = int(
-    abwanderung_wahrscheinlichkeit >= 0.50
+    prozent_wahrscheinlichkeit = (
+        abwanderung_wahrscheinlichkeit * 100
     )
 
-    # Risikostufe bestimmen (30 / 60 Thresholds)
+    # Binäre Klasse mit einem Schwellenwert von 0,50 ermitteln
+    vorhergesagte_klasse = int(
+        abwanderung_wahrscheinlichkeit >= 0.50
+    )
+
+    # Risikostufe bestimmen (30-%- und 60-%-Schwellenwerte)
     if prozent_wahrscheinlichkeit >= 60:
         risiko_titel = "HOCH"
         risiko_symbol = "🔴"
+
     elif prozent_wahrscheinlichkeit >= 30:
         risiko_titel = "MITTEL"
         risiko_symbol = "🟠"
+
     else:
         risiko_titel = "GERING"
         risiko_symbol = "🟢"
@@ -194,9 +242,11 @@ if st.button(
 
     # Fortschrittsbalken anzeigen
     st.subheader("Risiko-Indikator")
+
     st.progress(
         min(int(prozent_wahrscheinlichkeit), 100)
     )
+
     st.caption(
         "Die Prozentzahl entspricht der vom XGBoost-Modell "
         "geschätzten Wahrscheinlichkeit einer Abwanderung."
@@ -204,10 +254,13 @@ if st.button(
 
     # SHAP-Erklärung aufbauen
     st.divider()
+
     st.header("3. Erklärbare KI (SHAP)")
+
     st.write(
-        "SHAP zeigt, welche Merkmale die individuelle Modellentscheidung beeinflussen "
-        "und ob sie das Churn-Risiko erhöhen oder reduzieren."
+        "SHAP zeigt, welche Merkmale die individuelle "
+        "Modellentscheidung beeinflussen und ob sie das "
+        "Churn-Risiko erhöhen oder reduzieren."
     )
 
     try:
@@ -250,53 +303,77 @@ if st.button(
         bereinigte_features = [
             (
                 "Credit Score",
-                shap_dict.get("numeric__CreditScore", 0.0),
+                shap_dict.get(
+                    "numeric__CreditScore",
+                    0.0
+                ),
                 str(kredit_score)
             ),
             (
                 "Alter",
-                shap_dict.get("numeric__Age", 0.0),
+                shap_dict.get(
+                    "numeric__Age",
+                    0.0
+                ),
                 f"{alter_kunde} J."
             ),
             (
                 "Kundendauer",
-                shap_dict.get("numeric__Tenure", 0.0),
+                shap_dict.get(
+                    "numeric__Tenure",
+                    0.0
+                ),
                 f"{laufzeit_jahre} J."
             ),
             (
                 "Kontostand",
-                shap_dict.get("numeric__Balance", 0.0),
+                shap_dict.get(
+                    "numeric__Balance",
+                    0.0
+                ),
                 f"{kontostand_wert:,.0f} €"
             ),
             (
                 "Anzahl Produkte",
-                shap_dict.get("numeric__NumOfProducts", 0.0),
+                shap_dict.get(
+                    "numeric__NumOfProducts",
+                    0.0
+                ),
                 str(anzahl_produkte)
             ),
             (
                 "Kreditkarte",
-                shap_dict.get("numeric__HasCrCard", 0.0),
+                shap_dict.get(
+                    "numeric__HasCrCard",
+                    0.0
+                ),
                 "Ja" if besitzt_kreditkarte == 1 else "Nein"
             ),
             (
                 "Aktivität",
-                shap_dict.get("numeric__IsActiveMember", 0.0),
+                shap_dict.get(
+                    "numeric__IsActiveMember",
+                    0.0
+                ),
                 "Ja" if ist_aktiv == 1 else "Nein"
             ),
             (
                 "Gehalt",
-                shap_dict.get("numeric__EstimatedSalary", 0.0),
+                shap_dict.get(
+                    "numeric__EstimatedSalary",
+                    0.0
+                ),
                 f"{gehalt_geschaetzt:,.0f} €"
             ),
             (
                 "Herkunft",
                 geo_shap_total,
-                str(herkunftsland)
+                laender_anzeige[herkunftsland]
             ),
             (
                 "Geschlecht",
                 gender_shap_val,
-                str(geschlecht_kunde)
+                geschlechter_anzeige[geschlecht_kunde]
             )
         ]
 
@@ -309,7 +386,10 @@ if st.button(
         ])
 
         display_data = np.array(
-            [item[2] for item in bereinigte_features],
+            [
+                item[2]
+                for item in bereinigte_features
+            ],
             dtype=object
         )
 
@@ -337,6 +417,7 @@ if st.button(
                     f"🔴 **{merkmal_name}** → "
                     "wirkt im Modell risikosteigernd"
                 )
+
             elif wert_shap < -0.001:
                 st.write(
                     f"🟢 **{merkmal_name}** → "
@@ -358,7 +439,9 @@ if st.button(
         base_val = shap_analysator.expected_value
 
         if isinstance(base_val, (list, np.ndarray)):
-            base_val = np.asarray(base_val).flatten()[0]
+            base_val = np.asarray(
+                base_val
+            ).flatten()[0]
 
         waterfall_erklaerung = shap.Explanation(
             values=display_shap,
@@ -378,10 +461,12 @@ if st.button(
         )
 
         plt.tight_layout()
+
         st.pyplot(
             fig_waterfall,
             clear_figure=True
         )
+
         plt.close(fig_waterfall)
 
         # Textliche Interpretation ausgeben
@@ -429,10 +514,14 @@ if st.button(
         st.error(
             "Die SHAP-Erklärung konnte nicht berechnet werden."
         )
-        st.code(str(error))
+
+        st.code(
+            str(error)
+        )
 
 # Footer
 st.divider()
+
 st.caption(
     "Prototyp – Bank Customer Churn Prediction | "
     "XGBoost + SHAP | Bachelor Thesis"
