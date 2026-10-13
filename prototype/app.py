@@ -44,17 +44,17 @@ def shap_analysator_erstellen():
     return shap.TreeExplainer(finales_modell)
 
 # Header der Webseite aufbauen
-st.title("🏦 Kundenabwanderung Vorhersage-System")
+st.title("🏦 Vorhersagesystem für Kundenabwanderung")
 
 st.subheader(
     "KI-gestütztes Dashboard zur Vorhersage "
-    "und Erklärung von Kunden-Churn"
+    "und Erklärung von Kundenabwanderung"
 )
 
 st.write(
     "Dieser funktionale Prototyp verwendet ein trainiertes "
-    "XGBoost-Modell zur Schätzung der Abwanderungswahrscheinlichkeit. "
-    "SHAP wird eingesetzt, um die individuelle Modellentscheidung "
+    "XGBoost-Modell zur Berechnung eines modellbasierten Churn-Scores. "
+    "SHAP wird eingesetzt, um die individuelle Modellvorhersage "
     "verständlich zu erklären."
 )
 
@@ -169,7 +169,7 @@ neuer_kunde_df = pd.DataFrame({
 
 st.divider()
 
-st.header("2. Analyse der Abwanderungsgefahr")
+st.header("2. Analyse des Abwanderungsrisikos")
 
 # Berechnung starten bei Button-Klick
 if st.button(
@@ -220,8 +220,8 @@ if st.button(
 
     with res_spalte1:
         st.metric(
-            "Churn-Wahrscheinlichkeit",
-            f"{prozent_wahrscheinlichkeit:.2f}%"
+            "Modellbasierter Churn-Score",
+            f"{prozent_wahrscheinlichkeit:.2f}".replace(".", ",") + " %"
         )
 
     with res_spalte2:
@@ -248,8 +248,10 @@ if st.button(
     )
 
     st.caption(
-        "Die Prozentzahl entspricht der vom XGBoost-Modell "
-        "geschätzten Wahrscheinlichkeit einer Abwanderung."
+        "Der angezeigte Wert ist ein modellbasierter Churn-Score. "
+        "Da keine gesonderte Wahrscheinlichkeitskalibrierung "
+        "durchgeführt wurde, ist er nicht als empirisch kalibrierte "
+        "Abwanderungswahrscheinlichkeit zu interpretieren."
     )
 
     # SHAP-Erklärung aufbauen
@@ -259,7 +261,7 @@ if st.button(
 
     st.write(
         "SHAP zeigt, welche Merkmale die individuelle "
-        "Modellentscheidung beeinflussen und ob sie das "
+        "Modellvorhersage beeinflussen und ob sie das "
         "Churn-Risiko erhöhen oder reduzieren."
     )
 
@@ -302,7 +304,7 @@ if st.button(
         # Merkmalsnamen und Anzeigewerte für das Dashboard
         bereinigte_features = [
             (
-                "Credit Score",
+                "Kredit-Score",
                 shap_dict.get(
                     "numeric__CreditScore",
                     0.0
@@ -331,7 +333,7 @@ if st.button(
                     "numeric__Balance",
                     0.0
                 ),
-                f"{kontostand_wert:,.0f} €"
+                f"{kontostand_wert:,.0f} €".replace(",", ".")
             ),
             (
                 "Anzahl Produkte",
@@ -363,10 +365,10 @@ if st.button(
                     "numeric__EstimatedSalary",
                     0.0
                 ),
-                f"{gehalt_geschaetzt:,.0f} €"
+                f"{gehalt_geschaetzt:,.0f} €".replace(",", ".")
             ),
             (
-                "Herkunft",
+                "Geografische Region",
                 geo_shap_total,
                 laender_anzeige[herkunftsland]
             ),
@@ -450,17 +452,15 @@ if st.button(
             feature_names=display_names
         )
 
-        fig_waterfall, ax_wf = plt.subplots(
-            figsize=(10, 6.5)
-        )
-
         shap.plots.waterfall(
             waterfall_erklaerung,
             max_display=10,
             show=False
         )
 
-        plt.tight_layout()
+        fig_waterfall = plt.gcf()
+        fig_waterfall.set_size_inches(12, 8)
+        fig_waterfall.tight_layout(pad=2.0)
 
         st.pyplot(
             fig_waterfall,
@@ -502,7 +502,7 @@ if st.button(
 
         # Methodischer Hinweis am Ende
         st.info(
-            "Hinweis: SHAP erklärt die Modellentscheidung. "
+            "Hinweis: SHAP erklärt die Modellvorhersage. "
             "Ein positiver SHAP-Wert erhöht den Beitrag "
             "zur Churn-Klasse, während ein negativer SHAP-Wert "
             "den Beitrag zur Churn-Klasse reduziert. "
@@ -523,7 +523,7 @@ if st.button(
 st.divider()
 
 st.caption(
-    "Prototyp – Bank Customer Churn Prediction | "
-    "XGBoost + SHAP | Bachelor Thesis"
+    "Prototyp zur Vorhersage von Bankkundenabwanderung | "
+    "XGBoost + SHAP | Bachelorarbeit"
 )
 

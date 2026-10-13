@@ -49,10 +49,13 @@ with open("prototype/model/final_transformer.pkl", "rb") as datei:
 # Testdaten transformieren und Vorhersagen berechnen
 test_daten_bereit = eval_transformer.transform(X_test)
 
-vorhersage_labels = eval_klassifikator.predict(test_daten_bereit)
 abwanderung_scores = eval_klassifikator.predict_proba(
     test_daten_bereit
 )[:, 1]
+
+vorhersage_labels = (
+    abwanderung_scores >= 0.50
+).astype(int)
 
 # Kennzahlen
 wert_accuracy = accuracy_score(y_test, vorhersage_labels)
@@ -101,6 +104,8 @@ ConfusionMatrixDisplay(
 ).plot(ax=ax_matrix)
 
 ax_matrix.set_title("Konfusionsmatrix des XGBoost-Modells")
+ax_matrix.set_xlabel("Vorhergesagte Klasse")
+ax_matrix.set_ylabel("Tatsächliche Klasse")
 plt.tight_layout()
 plt.savefig(
     "prototype/confusion_matrix.png",
@@ -115,12 +120,15 @@ fig_roc, ax_roc = plt.subplots(figsize=(7, 6))
 RocCurveDisplay.from_predictions(
     y_test,
     abwanderung_scores,
-    ax=ax_roc
+    ax=ax_roc,
+    name="XGBoost"
 )
 
 ax_roc.set_title(
     f"ROC-Kurve des XGBoost-Modells (AUC = {wert_auc:.4f})"
 )
+ax_roc.set_xlabel("Falsch-Positiv-Rate")
+ax_roc.set_ylabel("Richtig-Positiv-Rate")
 plt.tight_layout()
 plt.savefig(
     "prototype/roc_curve.png",
@@ -133,3 +141,4 @@ print("\nEvaluation abgeschlossen.")
 print("Gespeicherte Dateien:")
 print("- prototype/confusion_matrix.png")
 print("- prototype/roc_curve.png")
+
