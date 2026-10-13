@@ -26,7 +26,7 @@ Die Zielvariable verteilt sich wie folgt:
 
 ### Datenquelle
 
-Für die Untersuchung wird der öffentlich verfügbare Kaggle-Datensatz „Customer Churn from a Bank“ verwendet:
+Für die Untersuchung wird der öffentlich verfügbare Kaggle-Datensatz „Bank Customer Churn Prediction“ von Murilo Zangari verwendet:
 
 https://www.kaggle.com/datasets/murilozangari/customer-churn-from-a-bank
 
